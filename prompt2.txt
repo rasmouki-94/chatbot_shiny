@@ -1,0 +1,106 @@
+Tu as accès au dépôt local (fichiers du répertoire). Objectif : transformer mon app Shiny existante en expérience “vrai chatbot” très dynamique, design Apple ultra épuré, accent #8e66c7.
+
+RÈGLES
+- Ne me demande pas de coller app.R : lis les fichiers du repo et modifie-les.
+- Commence par identifier le point d’entrée (app.R ou autre) puis propose une refacto minimale et sûre.
+- Priorité : UX chatbot + fluidité. Le scoring et l’arbre de questions doivent rester identiques (12 questions).
+- Output attendu : modifications directement dans les fichiers du repo (app.R + fichiers JS/CSS si besoin). Si tu crées de nouveaux fichiers, fais-le proprement (ex: /www/chat.js, /www/chat.css).
+- Aucune dépendance cloud “obligatoire” pour fonctionner. Si tu utilises un CDN (React), prévois un fallback local/vanilla si indisponible.
+
+OBJECTIF UX (non négociable)
+1) Impression de discuter avec un vrai chatbot
+- Bulles iMessage : bot à gauche, user à droite.
+- Quand l’utilisateur répond :
+  a) la bulle user apparaît instantanément
+  b) le bot affiche un “typing indicator” animé (3 points) pendant 500–900ms
+  c) la prochaine question arrive dans une bulle bot
+- Auto-scroll à chaque nouveau message.
+- Animation douce à l’apparition des bulles (fade + slide léger).
+- Input “collé” en bas de la fenêtre de chat (sticky), type iMessage.
+
+2) Design Apple ultra épuré
+- Page très clean, centrée, grande marge, pas de bruit visuel.
+- Titre au-dessus de la carte chat : “Faites une analyse de vos process actuels”
+- Accent color #8e66c7 (boutons, focus, petits highlights).
+- Bords arrondis, ombre très légère, typo system-ui / SF Pro si dispo.
+- Responsive mobile.
+
+3) Formulaire lead : PAS de gros formulaire
+- Après Q12 : gate obligatoire avant résultats, mais en mode conversation.
+- Le bot dit :
+  “Merci.
+   J’ai identifié plusieurs signaux potentiels.
+   Pour afficher votre diagnostic personnalisé, j’ai besoin de 4 infos 👇”
+- Ensuite demander 1 info à la fois, comme une conversation :
+  1) “Quel est votre prénom ?” (input texte compact)
+  2) “Votre nom ?”
+  3) “Votre entreprise ?”
+  4) “Votre email professionnel ?” (validation email)
+- Puis afficher une case à cocher compacte (obligatoire) :
+  “J’accepte d’être recontacté concernant mon diagnostic.”
+- Puis un bouton unique : “Voir mon diagnostic”
+- La validation est inline (erreur discrète sous l’input), et on n’avance pas si invalide.
+
+4) Résultats dans le chat (pas une page séparée)
+- Après clic “Voir mon diagnostic” :
+  - message bot “Analyse en cours…” + typing indicator 1200–2000ms
+  - puis une “carte résultat” élégante insérée dans le flux chat :
+    - “Diagnostic — <Entreprise>”
+    - Badge 🟢/🟠/🔴 + label (selon score)
+    - “Top 3 fuites potentielles” (3 lignes max)
+    - 1 paragraphe “Impact estimé” court
+    - CTA discret : bouton “Proposer un créneau” ouvre une modal interne (sans Calendly obligatoire)
+
+ARCHITECTURE TECHNIQUE (pour rendre ça vraiment dynamique)
+Tu dois implémenter une “message queue” côté front (UI) pour orchestrer :
+- append de la bulle user
+- typing indicator bot
+- append de la bulle bot
+- scroll automatique
+- disable/enable des inputs pendant typing
+
+Choix d’implémentation (ordre de préférence) :
+A) React (si possible) :
+- Intégrer un composant React minimal “ChatApp” qui gère l’historique et le rendu des bulles + typing.
+- Brancher Shiny <-> React via custom messages (Shiny.sendCustomMessage / session$sendCustomMessage) :
+  - Shiny envoie : {type:"bot", text:"..."} / {type:"typing", on:true} / {type:"typing", on:false} / {type:"card", payload:{...}}
+  - Le front envoie : {type:"answer", value:"..."} / {type:"text_input", value:"..."} / {type:"consent", value:true}
+- Si React package n’est pas dispo, utiliser React via CDN (react + react-dom) + Babel standalone OU un bundle JS simple.
+- Important : si CDN inaccessible, fallback “vanilla JS renderer” doit fonctionner.
+
+B) Fallback Vanilla JS (obligatoire si A indisponible) :
+- Créer /www/chat.js + /www/chat.css
+- Render du chat via DOM (template strings) + animations CSS
+- Utiliser Shiny custom messages pour pousser des événements (append message, show typing, show card, set input mode).
+- Un seul conteneur chat + un conteneur input dynamique.
+
+Dans tous les cas :
+- Le server Shiny doit piloter uniquement l’état (étape question / lead capture / résultat) et envoyer des événements UI.
+- Ne pas faire des uiOutput lourds qui re-rendent toute la page à chaque message : ça casse l’effet “chat”.
+- Typing indicator doit être une vraie animation CSS (3 dots).
+
+DONNÉES / LOGIQUE
+- Conserve exactement mes 12 questions et options existantes.
+- Conserve le scoring total et sous-scores.
+- Conserve le banding 0–15 / 16–25 / 26–36.
+- Conserve la sélection Top 3 “fuites” basée sur sous-scores.
+
+PERSISTENCE
+- Conserver la sauvegarde CSV (si déjà en place).
+- S’assurer que la sauvegarde se déclenche uniquement après lead gate validé + résultats affichés.
+- Ne jamais faire planter l’app si écriture impossible : fallback tempdir + warning console.
+
+EXÉCUTION
+1) Inspecte le repo : liste les fichiers et identifie l’entrée Shiny.
+2) Implémente la couche UI dynamique (React ou Vanilla) + CSS.
+3) Branche le server avec custom messages pour orchestrer l’enchaînement des bulles + typing.
+4) Refactor le lead capture en 4 micro-étapes conversationnelles.
+5) Vérifie que l’app démarre sans erreur et que le flux complet fonctionne.
+
+CONTRAINTES DE SORTIE
+- Modifie les fichiers directement dans le repo.
+- Si tu crées des fichiers, indique clairement leurs chemins et leur contenu.
+- Ne donne pas d’explications longues : uniquement ce qui est nécessaire pour comprendre quels fichiers ont été modifiés/créés.
+- Pas de blabla marketing.
+
+Commence maintenant.

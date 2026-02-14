@@ -1,0 +1,66 @@
+Tu as accès au dépôt local et tu dois améliorer mon app Shiny “chatbot” existante.
+
+OBJECTIF (priorité absolue)
+Augmenter la conversion et l’engagement en :
+1) reformulant les questions pour qu’elles “piquent” (douleur quotidienne) et qu’on se reconnaisse immédiatement,
+2) réduisant les frictions au maximum (réponses ultra simples, micro-copy rassurant),
+3) ajoutant de la quantification en temps/argent dans les messages (sans casser le flow, sans pavés),
+4) supprimant toute checkbox de consentement : remplacer par une phrase en italique (voir plus bas).
+
+RÈGLES
+- Ne change pas la logique du flow : 12 questions → gate infos → résultats.
+- Ne change pas les options de réponse (4 choix par question) SAUF si c’est nécessaire pour réduire la friction (ex: simplifier les libellés), mais garde 4 choix et le scoring 0/1/2/3.
+- Les textes doivent être en français naturel, direct, orienté terrain industrie.
+- Les messages doivent rester courts : 1–2 phrases max par bulle.
+- Les quantifications doivent être crédibles, simples, et présentées comme des “ordres de grandeur”.
+
+CHANGEMENTS À FAIRE — QUESTIONS “DOULEUR + CHIFFRAGE”
+Refactor uniquement les libellés (question + micro-messages bot), en gardant la structure.
+
+Pour chaque question :
+- Formule la question comme une scène du quotidien (ex: “Vous avez 3 versions du même fichier…”).
+- Ajoute une micro-phrase d’impact (ex: “30 min/jour de ressaisie = ~110h/an”).
+- Utilise un coût horaire par défaut configurable côté code (ex: 60€/h) et un nb de jours travaillés/an (ex: 220). Ces paramètres doivent être constants en haut du fichier.
+- Quand c’est pertinent, calcule dynamiquement un ordre de grandeur (heures/an + €/an) et injecte-le dans le texte du bot.
+
+Exemples de quantification (à intégrer intelligemment selon les réponses) :
+- 30 min/jour ≈ 110h/an
+- 1h/jour ≈ 220h/an
+- 3h/semaine ≈ 150h/an
+- 6h/semaine ≈ 300h/an
+- Conversion € : heures/an * coût_horaire (par défaut 60€) → ex: 220h ≈ 13k€/an ; 300h ≈ 18k€/an
+- Sans promettre, dire “ordre de grandeur”, “souvent”, “typiquement”.
+
+IMPORTANT : n’affiche pas un long tableau. Juste des punchlines dans le chat.
+
+LEAD GATE — RÉDUCTION DE FRICTION
+- Supprimer entièrement la checkbox “J’accepte d’être recontacté…”.
+- À la place, sous le bouton “Voir mon diagnostic”, afficher un petit texte en italique (discret) :
+  “En soumettant ces informations, vous acceptez d’être recontacté au sujet de votre diagnostic.”
+- Garder le gate en 4 micro-étapes conversationnelles (prénom, nom, entreprise, email).
+- Validation inline pour email uniquement (message court).
+
+RÉSULTATS — RENFORCER “ÇA FAIT MAL”
+Sans changer la structure (badge + top 3 fuites + impact + CTA), améliorer le copywriting :
+- Impact estimé doit faire “tilt” : temps perdu + risque retards + dépendance.
+- Ajouter 1 ligne “ordre de grandeur” basée sur le score (ex: “Si vous avez ne serait-ce que 30 min/jour de ressaisie, on parle souvent de >10k€/an”).
+- Garder le ton sobre, pas agressif, pas alarmiste ridicule.
+
+TECHNIQUE
+- Mettre en place une fonction utilitaire `money_hours_hint(...)` qui renvoie une phrase courte selon les réponses clés (Q3, Q6, Q2).
+- Injecter ces hints dans les messages bot au bon moment (après certaines réponses) pour créer l’effet “ah oui, ça pique”.
+- Ne pas casser l’effet chatbot : les messages d’impact doivent apparaître comme une bulle bot supplémentaire (avec typing indicator) juste après la réponse user, puis la question suivante.
+
+CONTRAINTES
+- Ne pas demander de coller le code : lis et modifie les fichiers du repo.
+- Conserver le design et la dynamique “chat” déjà en place (typing indicator, bulles, autoscroll, input sticky).
+- Output : appliquer les changements dans le repo ; si tu modifies plusieurs fichiers, liste brièvement lesquels.
+
+COMMENCE PAR
+1) Inspecter où sont définis les textes des questions et messages bot.
+2) Refactor ces textes avec le nouveau style “douleur + quantification”.
+3) Implémenter les constantes (coût horaire, jours/an) et les fonctions d’estimation.
+4) Remplacer la checkbox consent par la phrase en italique sous le bouton.
+5) Vérifier que l’app se lance.
+
+Fais-le maintenant.

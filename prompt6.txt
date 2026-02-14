@@ -1,0 +1,64 @@
+RÈGLES
+- Ne me demande pas de coller des fichiers : lis/modifie ceux du repo.
+- Ne casse pas le flow chatbot existant (bulles, typing indicator, auto-scroll, input sticky).
+- Output : applique les corrections directement dans le repo. Si plusieurs fichiers, liste brièvement lesquels.
+
+PROBLÈME 1 — Barre de progression (dynamique + %)
+OBJECTIF UX
+- Barre très épurée, fine, arrondie, style Apple.
+- Accent color #8e66c7.
+- Elle doit avancer AU FUR ET À MESURE du parcours, avec un pourcentage affiché de façon discrète.
+- Transition douce (250–400ms). Aucun effet flashy.
+- Doit fonctionner avec le rendu “chat” (message queue) sans dépendre d’un rerender complet de l’UI.
+
+EXIGENCES TECHNIQUES
+- Créer une source de vérité unique `progress` (0–100) calculée dynamiquement selon l’étape :
+  - Questions : progression linéaire de 0% à 70% sur N questions (N = nb de questions effectif)
+  - Lead gate (prénom/nom/entreprise/email) : 70% → 85% (linéaire sur 4 étapes)
+  - Résultat : passer à 100% quand la carte résultat est affichée
+- À chaque avancée (réponse question, étape lead gate validée, résultat affiché), appeler une fonction unique `setProgress(pct)` qui :
+  - met à jour la largeur du “fill” de la barre
+  - met à jour le texte “XX%” (discret, petit)
+- IMPORTANT : la mise à jour doit se faire côté front via custom messages (Shiny custom message handler) pour éviter les bugs liés aux rerenders Shiny.
+  - Exemple attendu :
+    - server : session$sendCustomMessage("progress", list(pct = pct))
+    - JS : Shiny.addCustomMessageHandler("progress", function(msg){ ... })
+- Si mon UI est en React, faire l’équivalent via un event / state update ; sinon, JS vanilla.
+
+À FAIRE
+1) Diagnostiquer pourquoi la barre ne bouge pas (IDs DOM, rerender, CSS width, handler absent, conflit).
+2) Corriger avec la stratégie ci-dessus (custom messages + handler robuste).
+3) S’assurer que la barre est visible et ne “saute” pas.
+4) Afficher le pourcentage : ex “42%” aligné à droite du header, en gris discret.
+
+PROBLÈME 2 — Accents (UTF-8)
+Symptôme : les caractères accentués sont dégradés (é devient e).
+
+À FAIRE
+- Assurer que le code et le rendu HTML sont en UTF-8 :
+  1) Forcer l’encodage UTF-8 au démarrage :
+     - options(encoding = "UTF-8")
+     - Sys.setlocale(category="LC_ALL", locale="fr_FR.UTF-8") si dispo, sinon fallback système sans crash
+  2) Ajouter une balise meta charset dans l’UI :
+     tags$head(tags$meta(charset="utf-8"))
+  3) Vérifier l’encodage des fichiers du repo (app.R, JS) :
+     - si un fichier est en Latin-1/Windows-1252, le convertir en UTF-8 (sans BOM) directement dans le repo.
+- La correction doit fonctionner sur shinyapps.io (Linux) + local (Windows).
+- IMPORTANT : ne pas casser l’app si la locale fr_FR.UTF-8 n’est pas disponible : mettre un tryCatch et continuer.
+
+VALIDATION
+- Une fois corrigé :
+  - Le texte “Faites une analyse de vos process actuels” affiche bien les accents partout.
+  - Les messages (é, à, ù, ç) s’affichent correctement.
+  - La barre avance à chaque question et affiche un % cohérent.
+
+EXÉCUTION
+1) Inspecte le repo : repère où la barre est créée (HTML/CSS/JS) et où l’état d’étape est géré.
+2) Implémente les custom messages “progress” et le calcul du pourcentage côté server.
+3) Ajoute le meta charset + encodage UTF-8 + conversion fichiers si besoin.
+4) Vérifie que tout fonctionne.
+
+SORTIE
+- Applique les changements dans le repo.
+- Liste brièvement les fichiers modifiés/créés et leur rôle.
+Commence maintenant.

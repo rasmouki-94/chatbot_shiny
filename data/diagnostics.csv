@@ -1,0 +1,6 @@
+"timestamp_utc","session_id","q1","q2","q3","q4","q5","q6","q7","q8","q9","q10","q11","q12","score_total","band","subscore_temps","subscore_visibilite","subscore_deadline","subscore_finance","subscore_dependance","prenom","nom","entreprise","email","taille_entreprise","fonction","consent"
+"2026-02-14T08:39:12Z","20260214093806-c5221c3c8e484f925b843fb244831ff8",2,1,1,1,2,2,2,2,2,2,2,2,21,"Sous tension",4,3,4,2,4,"prolo","vitch","prolix","prolo@prolix.fr","","",TRUE
+"2026-02-14T08:42:01Z","20260214094027-04dd83dbed3521f78694638bedb5d866",0,1,1,2,1,2,1,1,1,1,1,2,14,"Process maitrises",4,3,2,1,2,"prolo","ppp","lll","lll@ok.fr","","",TRUE
+"2026-02-14T08:53:11Z","20260214094958-5f9b19b1a1c7e6eb488bc40651d1b91a",1,1,1,1,2,2,1,1,1,2,2,2,17,"Sous tension",4,3,2,2,3,"ok","okok","ok@sfr.fr","ok@sfr.fr","","",TRUE
+"2026-02-14T15:50:59Z","20260214164924-da30a651c2b4c049f4c788e758a3b6b7",1,0,1,1,1,1,1,1,1,1,NA,NA,9,"Sous tension",2,2,1,1,1,"ok","ok","ok","ok@sfr.fr","","",TRUE
+"2026-02-14T16:23:53Z","20260214172249-c520d5fc4d950f4b5181df49444e2017",0,1,1,1,0,1,1,1,1,1,NA,NA,8,"Process maÃ®trisÃ©s",3,1,1,1,1,"ok","ok","ok","ok@sfr.fr","","",TRUE

@@ -1,0 +1,207 @@
+OBJECTIF
+1) Remplacer les textes des questions/réponses + messages d’impact par la nouvelle version ci-dessous (copywriting plus “valorisant”, phrases complètes, chiffres intégrés naturellement).
+2) Ajouter une barre de progression très épurée, style Apple, intégrée au header de la fenêtre de chat (ou juste sous le titre), indiquant l’avancement du diagnostic.
+
+RÈGLES
+- Ne me demande pas de coller app.R : lis et modifie les fichiers du repo.
+- Ne change PAS l’architecture “chat dynamique” (bulles, typing indicator, auto-scroll, input sticky, message queue).
+- Ne casse pas le flow : intro → questions → lead gate (4 micro-étapes) → résultats.
+- 3 réponses maximum par question.
+- Si ton code actuel est en 12 questions / 4 choix : adapte proprement au nouveau script (10 questions / 3 choix).
+- Adapter le scoring à 3 choix : 0/1/2 points (au lieu de 0/1/2/3) tout en conservant :
+  - score total
+  - sous-scores
+  - banding (ajuste les seuils proportionnellement si nécessaire)
+- Après Q10, conserver le lead gate conversationnel (prénom, nom, entreprise, email).
+- Consentement : supprimer toute checkbox. À la place, sous le bouton “Voir mon diagnostic”, afficher en italique :
+  “En soumettant ces informations, vous acceptez d’être recontacté au sujet de votre diagnostic.”
+
+PROGRESSION (barre design)
+- Ajouter une barre de progression minimaliste (fine, arrondie).
+- Accent #8e66c7.
+- Afficher “Étape X / N” de façon discrète (optionnel, petit texte).
+- La barre doit progresser :
+  - pendant les questions : de 0 à 70%
+  - pendant le lead gate : de 70 à 85%
+  - pendant l’affichage des résultats : de 85 à 100%
+- Aucun effet flashy : animation douce (transition 250–400ms).
+- Responsive, pas d’encombrement visuel.
+
+TEXTES À INTÉGRER (QUESTIONS + IMPACTS)
+
+INTRO
+Bonjour 👋  
+En 2 minutes, je vais vous aider à mettre des mots (et des chiffres) sur ce que vous ressentez peut-être déjà dans votre organisation.  
+Prêt ?
+
+Réponses intro :
+- Oui
+- Pas maintenant
+
+Q1
+Aujourd’hui, pour piloter vos opérations au quotidien, vous vous appuyez principalement sur :
+Réponses :
+- Principalement Excel  
+- Excel + plusieurs outils dispersés  
+- Un ERP bien structuré  
+
+Impact si “Principalement Excel” :
+Excel est un outil puissant — surtout entre de bonnes mains.  
+Mais dans beaucoup d’industries, il finit par devenir le centre névralgique… sans offrir la visibilité d’un vrai système de pilotage.
+
+Impact si “Excel + plusieurs outils dispersés” :
+Multiplier les outils permet souvent d’aller vite au début.  
+Mais sans intégration claire, cela crée progressivement des zones floues où chacun travaille avec sa propre lecture de la réalité.
+
+Q2
+Aujourd’hui, combien de versions d’un même fichier circulent réellement dans votre organisation ?
+Réponses :
+- Une seule version claire  
+- 2 à 3 versions selon les équipes  
+- Honnêtement, difficile à dire  
+
+Impact si “2 à 3 versions…” :
+Lorsque plusieurs versions coexistent, les décisions prennent mécaniquement plus de temps.  
+On passe de l’analyse… à la vérification.
+
+Impact si “difficile à dire” :
+Ne pas savoir quelle est la “bonne version” n’est pas un manque de rigueur.  
+C’est souvent le signe qu’un process a grandi plus vite que sa structure.
+
+Q3
+Chaque semaine, combien d’heures vos équipes consacrent-elles à consolider, vérifier ou recouper des données ?
+Réponses :
+- Moins d’1h  
+- 1 à 3h  
+- Plus de 3h  
+
+Impact si “1 à 3h” :
+3h par semaine représentent environ 150h par an.  
+À l’échelle d’un responsable ou d’une assistante, cela peut facilement représenter 8 000 à 10 000€ immobilisés… sans création de valeur directe.
+
+Impact si “Plus de 3h” :
+Au-delà de 3h par semaine, on dépasse souvent 200 à 300 heures par an.  
+Ce sont plusieurs semaines de travail consacrées non pas à piloter, mais à vérifier.
+
+Q4
+Les retards dans vos projets sont généralement :
+Réponses :
+- Visibles immédiatement  
+- Identifiés lors d’un point hebdomadaire  
+- Découverts une fois qu’ils ont déjà un impact  
+
+Impact si “point hebdo” :
+Un point hebdomadaire est structurant.  
+Mais une semaine peut suffire à transformer un léger décalage en situation sous tension.
+
+Impact si “après impact” :
+Découvrir un retard après coup n’est pas une erreur individuelle.  
+C’est souvent le signe qu’il manque un système d’alerte en amont.
+
+Q5
+Vos indicateurs clés sont aujourd’hui :
+Réponses :
+- Automatiquement mis à jour  
+- Semi-manuellement consolidés  
+- Entièrement mis à jour à la main  
+
+Impact si “semi” :
+Chaque manipulation manuelle est une charge invisible.  
+Elle mobilise de l’attention, crée un risque d’erreur… et détourne du pilotage stratégique.
+
+Impact si “manuel” :
+30 minutes par jour de ressaisie représentent environ 110h par an.  
+À l’échelle d’une équipe, cela peut rapidement dépasser 10 000€ par an en temps mobilisé.
+
+Q6
+Si je vous demande maintenant le statut exact d’une deadline critique, vous avez besoin de :
+Réponses :
+- Quelques secondes  
+- Quelques minutes  
+- Plus de 30 minutes  
+
+Impact si “minutes” :
+Quelques minutes semblent anodines.  
+Mais multipliées par plusieurs vérifications quotidiennes, cela représente des dizaines d’heures par an consacrées uniquement à chercher l’information.
+
+Impact si “30 minutes” :
+Lorsque vérifier une échéance prend 30 minutes,  
+cela signifie généralement que l’information existe… mais n’est pas structurée pour décider rapidement.
+
+Q7
+Est-ce que certaines demandes disparaissent temporairement avant d’être traitées ?
+Réponses :
+- Jamais  
+- Rarement  
+- Oui, cela arrive régulièrement  
+
+Impact si “rarement” :
+Même rarement, une demande oubliée peut créer une chaîne d’ajustements imprévus.  
+Et souvent, c’est l’urgence qui révèle la faiblesse du process.
+
+Impact si “régulièrement” :
+Quand les demandes se perdent, le problème n’est pas humain.  
+C’est souvent l’absence d’un système clair de suivi et de priorisation.
+
+Q8
+Si la personne qui tient le fichier principal s’absente une semaine :
+Réponses :
+- Aucun impact  
+- L’activité ralentit sensiblement  
+- L’organisation est réellement en difficulté  
+
+Impact si “ralentit” :
+Un ralentissement temporaire est courant.  
+Mais lorsqu’il dépend d’une seule personne, le risque organisationnel devient structurel.
+
+Impact si “difficulté” :
+Lorsque la connaissance repose sur une seule tête,  
+la continuité opérationnelle devient fragile — même avec des équipes compétentes.
+
+Q9
+Au cours des 12 derniers mois, avez-vous connu des urgences coûteuses ou des pénalités liées à un manque de visibilité ?
+Réponses :
+- Non  
+- Une ou deux situations isolées  
+- Oui, plusieurs situations  
+
+Impact si “isolées” :
+Une seule urgence peut représenter plusieurs milliers d’euros.  
+Mais surtout, elle mobilise l’énergie des équipes en mode “réaction”.
+
+Impact si “plusieurs” :
+Lorsque les urgences deviennent répétitives,  
+cela indique souvent que le pilotage est plus réactif que prédictif.
+
+Q10
+Avec recul, vos process actuels vous semblent :
+Réponses :
+- Robustes  
+- Corrects mais perfectibles  
+- Fragiles  
+
+Impact si “perfectibles” :
+C’est souvent à ce stade que les fuites invisibles commencent à s’installer.  
+Rien de dramatique… mais un potentiel d’optimisation réel.
+
+Impact si “fragiles” :
+Un process fragile ne coûte pas toujours cher immédiatement.  
+Mais il finit presque toujours par coûter cher au mauvais moment.
+
+RÉSULTATS — si score élevé (à intégrer comme texte d’impact possible dans la carte résultats)
+Même 1 heure par jour consacrée à des tâches de consolidation ou de recherche d’information représente plus de 200 heures par an.  
+À 60€ de l’heure, cela peut facilement dépasser 12 000€ immobilisés — sans amélioration directe de la performance.  
+La bonne nouvelle : ces heures ne sont pas perdues par manque de compétence. Elles sont souvent récupérables avec une meilleure structuration.
+
+EXÉCUTION
+1) Inspecte le repo et localise la définition des questions et du scoring.
+2) Remplace les textes et adapte le modèle à 10 questions / 3 choix.
+3) Ajuste scoring + banding proportionnellement.
+4) Ajoute la barre de progression minimaliste (CSS + logique).
+5) Vérifie que l’app démarre et que le flow complet fonctionne.
+
+SORTIE
+- Applique les modifications dans les fichiers du repo.
+- Si tu modifies/crées plusieurs fichiers, liste brièvement lesquels (chemins) et leur rôle.
+- Pas de longs commentaires, pas de blabla.
+Commence maintenant.

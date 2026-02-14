@@ -1,0 +1,181 @@
+Build a production-ready R Shiny app (single-file app.R) that implements a “chatbot-like” questionnaire to identify hidden operational losses in industrial processes.
+
+GOALS
+- The app must feel like a real chatbot conversation (WhatsApp/iMessage vibe), but it is a guided decision-tree questionnaire (no LLM needed).
+- Minimalist Apple-like UI: very clean, lots of whitespace, subtle borders, soft shadows, rounded corners.
+- Accent color: #8e66c7 (use for primary buttons, highlights, small UI accents).
+- Chat window centered on screen, no visual noise. Title above chat: “Faites une analyse de vos process actuels”.
+- Desktop-first responsive layout; should still look good on mobile.
+- After the last question, ask for user details (first name, last name, company, professional email) to reveal results.
+- Store responses and lead info in a local CSV (append-only) in a /data folder (create if missing). Also store a timestamp and a session id. Make it robust for shinyapps.io (use writable tempdir or an app-local data directory if allowed; include fallback).
+- No external services required.
+
+FUNCTIONAL REQUIREMENTS
+1) Conversation flow (12 questions)
+- Display a bot intro message:
+  “Bonjour 👋
+   En 2 minutes, je vais identifier si vos process actuels génèrent des pertes invisibles.
+   Prêt ?”
+- Buttons: “Oui” and “Pas maintenant”. If “Pas maintenant”, show a polite end message and stop.
+
+Questions (one at a time; user answers via buttons/radio; mostly multiple choice):
+Q1: “Aujourd’hui, comment suivez-vous vos opérations ?”
+  - Principalement Excel
+  - Excel + outils dispersés
+  - ERP + Excel complémentaire
+  - ERP structuré sans Excel critique
+
+Q2: “Combien de versions d’un même fichier circulent en parallèle ?”
+  - Une seule
+  - 2–3 versions
+  - 4–5 versions
+  - Impossible à savoir
+
+Q3: “Combien d’heures par semaine sont consacrées à consolider ou vérifier des données ?”
+  - < 1h
+  - 1–3h
+  - 3–6h
+  - > 6h
+
+Q4: “Avez-vous une vision en temps réel des retards ou les découvrez-vous en réunion ?”
+  - Temps réel
+  - Mise à jour hebdomadaire
+  - Mise à jour irrégulière
+  - On découvre souvent trop tard
+
+Q5: “Vos indicateurs sont-ils automatiquement mis à jour ?”
+  - Oui
+  - Partiellement
+  - Non, manuel
+  - Non, et dépend d’une personne
+
+Q6: “Si vous deviez vérifier une deadline critique maintenant, combien de temps cela prendrait ?”
+  - Immédiat
+  - 5–10 minutes
+  - 30 minutes
+  - Plus de 30 minutes
+
+Q7: “Des demandes se perdent-elles parfois avant d’être traitées ?”
+  - Jamais
+  - Rarement
+  - Parfois
+  - Régulièrement
+
+Q8: “Avez-vous déjà découvert un retard après la date limite ?”
+  - Jamais
+  - 1–2 fois
+  - Plusieurs fois
+  - Fréquemment
+
+Q9: “Une personne clé détient-elle ‘le fichier central’ ?”
+  - Non
+  - Un peu
+  - Oui
+  - Oui, totalement critique
+
+Q10: “Avez-vous subi des pénalités ou urgences coûteuses liées à un manque de visibilité ?”
+  - Non
+  - Rarement
+  - Oui ponctuellement
+  - Oui régulièrement
+
+Q11: “Si un collaborateur clé s’absentait 1 semaine, l’activité serait-elle impactée ?”
+  - Aucun impact
+  - Léger impact
+  - Fort impact
+  - Blocage partiel
+
+Q12: “Selon vous, vos process actuels sont :”
+  - Robustes
+  - Acceptables
+  - Fragiles
+  - À risque
+
+2) Lead capture gate (mandatory to see results)
+After Q12, the bot says:
+“Merci.
+J’ai identifié plusieurs signaux potentiels dans votre organisation.
+Pour afficher votre diagnostic personnalisé, merci de compléter ces informations 👇”
+
+Then show a clean embedded form (still inside the chat flow) asking:
+- Prénom (required)
+- Nom (required)
+- Entreprise (required)
+- Email professionnel (required; validate with regex)
+Optional:
+- Taille de l’entreprise: <50, 50–200, 200–500, 500+
+- Fonction: Ops/Production, Qualité, Direction, Méthodes, Autre
+- Checkbox consent: “J’accepte d’être recontacté concernant mon diagnostic.” (required)
+
+Button: “Voir mon diagnostic” (accent color). Only enabled when required fields are valid.
+
+3) Scoring + result rendering
+- Compute a total score (0–36) where each answer maps to points 0–3 (best = 0, worst = 3).
+- Also compute sub-scores by axis:
+  - Temps perdu: Q2, Q3, Q6
+  - Visibilité/pilotage: Q4, Q5
+  - Risque deadline: Q7, Q8
+  - Risque financier: Q10
+  - Dépendance humaine: Q9, Q11
+  - Perception globale: Q12 (affects overall too)
+
+Provide a mapping table with sensible point assignments:
+- For each question, first option = 0, second = 1, third = 2, fourth = 3 (unless you justify a better mapping).
+- Total score bands:
+  - 0–15: 🟢 “Process maîtrisés”
+  - 16–25: 🟠 “Sous tension”
+  - 26–36: 🔴 “À risque structurel”
+
+Results screen (still in chat view but can be a nicely styled card):
+- Title: “Diagnostic — <Entreprise>”
+- Badge with band (green/orange/red).
+- “Top 3 fuites potentielles” chosen from highest sub-scores (break ties deterministically).
+  Use these labels:
+  1) “Temps perdu en consolidation”
+  2) “Détection tardive des retards”
+  3) “Dépendance critique à une personne”
+  4) “Demandes qui se perdent”
+  5) “Risque financier (pénalités / urgences)”
+  6) “Indicateurs non fiabilisés”
+- Show a short “Impact estimé” paragraph (generic but strong) based on the band.
+- Show a soft CTA (not pushy):
+  “Si vous le souhaitez, je peux analyser plus précisément votre situation lors d’un échange rapide.”
+  And a button “Proposer un créneau” that opens a modal with a placeholder text (no external calendly).
+
+4) Chat UI behaviors
+- Messages appear in sequence with slight delay (e.g., 300–600ms) to feel conversational.
+- Bot bubbles left; user bubbles right.
+- Auto-scroll to latest message.
+- Input area should show either:
+  - choice buttons for the current question
+  - or the lead form
+  - or end state
+- Provide a “Recommencer” link/button in the header or after results to reset session.
+
+5) Technical constraints
+- Use base Shiny + minimal dependencies. Allowed: shiny, htmltools, shinyjs (optional). Avoid heavy frameworks.
+- Use custom CSS for Apple-like look (SF font fallback, subtle shadows, rounded corners).
+- Keep code clean and commented.
+- Ensure app runs as `shiny::runApp()` and deploys on shinyapps.io.
+- No external images/assets; everything self-contained.
+- Create a /data directory and append to CSV:
+  columns: timestamp_utc, session_id, q1..q12, score_total, band, subscore_temps, subscore_visibilite, subscore_deadline, subscore_finance, subscore_dependance, prenom, nom, entreprise, email, taille_entreprise, fonction, consent
+- If file write fails (permissions), write to tempdir() and show a non-blocking warning in console.
+
+DELIVERABLES
+- Provide the full `app.R` content only (no extra commentary), ready to copy/paste.
+- Include CSS inside the UI (tags$style).
+- Include helper functions for:
+  - scoring
+  - banding
+  - selecting top 3 leaks
+  - writing CSV safely
+  - resetting state
+
+EDGE CASES
+- User refresh: start a new session.
+- Prevent skipping: don’t show the next question until an answer is recorded.
+- Validate email.
+- Don’t allow “Voir mon diagnostic” unless consent is checked and fields valid.
+
+Now produce the complete app.R file.

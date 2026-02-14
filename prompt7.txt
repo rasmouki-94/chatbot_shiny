@@ -1,0 +1,134 @@
+RÈGLES
+- Ne me demande pas de coller de fichier : lis/modifie ceux du repo.
+- Tu peux ajouter des packages si nécessaire (bslib, shinyjs, blastula, emayili, mailR, shinyMobile, etc.).
+- Priorité : ça doit marcher en local + shinyapps.io.
+- Output : applique les corrections dans le repo. Si tu crées des fichiers, mets-les dans /R et /www proprement et liste brièvement les fichiers modifiés.
+
+========================
+A) BARRE DE PROGRESSION — DOIT MARCHER (dynamique + %)
+========================
+Symptôme : la barre n’avance pas ou se bloque.
+
+Exigences UX
+- Style Apple ultra épuré, fine, arrondie, accent #8e66c7.
+- Afficher un pourcentage discret (ex: “42%”) dans le header, aligné à droite.
+- Animation douce (transition 250–400ms), sans clignotement.
+- Fonctionne sans dépendre d’un re-render complet Shiny.
+
+Exigences techniques (non négociables)
+- Implémenter la progression via un canal front stable :
+  1) Le server calcule `pct` (0–100) à chaque étape et envoie uniquement un custom message.
+     session$sendCustomMessage("progress_update", list(pct = pct))
+  2) Le front (JS) écoute et met à jour DOM :
+     - width du fill
+     - texte du pourcentage
+- Important : la barre et son fill DOIVENT avoir des IDs DOM stables, jamais recréés par `renderUI` à chaque message.
+- Si actuellement la barre est dans un `uiOutput` qui rerender => la déplacer dans un bloc UI statique (tags$div fixe) et ne mettre à jour que via JS.
+
+Calcul de progression (source unique de vérité)
+- Questions : 0% → 75% linéaire sur N questions réelles (N = nb questions effectif)
+  pct_questions = (index_question_terminee / N) * 75
+- Lead gate (prénom/nom/entreprise/email) : 75% → 90% linéaire sur 4 étapes
+- Résultat affiché : 100%
+- À chaque réponse validée, appeler une fonction server `push_progress(step)`.
+
+À faire
+1) Diagnostiquer pourquoi ça ne bouge pas (IDs incorrects, handler non chargé, barre rerender, CSS conflict).
+2) Refactor pour avoir :
+   - UI statique de la barre (HTML fixe)
+   - JS handler robuste (dans /www/progress.js)
+   - un `shinyjs::useShinyjs()` si besoin pour garantir la dispo JS
+3) Valider que chaque clic (réponse) fait avancer le %.
+
+========================
+B) ENCODAGE ACCENTS / EMOJI — CORRIGER LE MOJIBAKE
+========================
+Symptôme actuel :
+"Bonjour ðŸ‘‹ ... je vais vous aider Ã  ... peut-Ãªtre dÃ©jÃ ... PrÃªt ?"
+=> c’est un problème d’encodage/double-encodage (UTF-8 interprété en Latin1/Windows-1252 puis réaffiché).
+
+Exigences
+- Les accents doivent s’afficher correctement (é, à, è, ê, ç).
+- Les emojis doivent s’afficher correctement (👋).
+- Aucune bidouille fragile “remplace é par e”.
+- Ça doit marcher local Windows + shinyapps.io (Linux).
+
+Correctif attendu (approche robuste)
+1) S’assurer que TOUS les fichiers sources (app.R, .R, .js, .css) sont enregistrés en UTF-8 (sans BOM).
+   - Si besoin, détecter et convertir avec iconv.
+2) Ajouter meta charset UTF-8 dans l’UI (tags$meta(charset="utf-8")).
+3) Éviter toute re-encoding involontaire :
+   - si tu charges des textes depuis un fichier (json/csv), utiliser readLines(..., encoding="UTF-8") ou jsonlite::fromJSON(txt, simplifyVector=TRUE) en UTF-8.
+4) Ajouter un check au démarrage :
+   - vérifier `l10n_info()` et encodings
+   - ne pas forcer Sys.setlocale de manière cassante, mais tenter proprement :
+     try Sys.setlocale("LC_CTYPE", "fr_FR.UTF-8") puis fallback "C.UTF-8" puis laisser système.
+5) IMPORTANT : si le mojibake provient du JS (ex: messages envoyés en mauvaise encoding), corriger la chaîne :
+   - s’assurer que les custom messages envoyés par Shiny restent UTF-8 (enc2utf8 sur les textes avant envoi)
+   - côté JS, ne jamais appliquer decode/encode manuels (pas de escape/unescape)
+
+Validation
+- Le texte “Bonjour 👋” s’affiche exactement.
+- Tous les accents dans les questions/impacts sont corrects.
+
+========================
+C) UX — (1) enlever friction 1ère question, (2) mobile, (3) recevoir réponses par email
+========================
+
+C1) Enlever la friction de la 1ère question
+- Supprimer le “Prêt ? Oui / Pas maintenant”.
+- À l’ouverture, le bot envoie directement un message d’accueil court + enchaîne automatiquement sur Q1.
+- Ajouter uniquement un petit lien discret “Quitter” / “Recommencer” (pas une question bloquante).
+- Si tu veux garder l’opt-out : fais-le en micro-lien “Pas maintenant” sous l’input, pas comme une étape obligatoire.
+
+C2) Optimisation mobile (priorité)
+- L’app doit être confortable sur mobile :
+  - chat plein écran sur mobile (max-width: 100%, hauteur 100vh)
+  - input sticky en bas, accessible au pouce
+  - boutons réponse en 1 colonne ou grille 2x2 selon largeur
+  - taille des bulles, marges, fonts adaptées
+  - éviter les scrolls multiples (un seul scroll : le chat)
+- Utiliser bslib (Bootstrap 5) ou shinyMobile si tu juges plus robuste.
+  - Si bslib : page_fillable + card + fill + CSS minimal
+  - S’assurer que le viewport meta est correct :
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+C3) Recevoir les réponses utilisateurs sur MON email
+Objectif : à chaque complétion (après email utilisateur + résultat), m’envoyer un email récapitulatif contenant :
+- timestamp
+- prénom/nom/entreprise/email du prospect
+- réponses Q1..Q10
+- score + band + top 3 fuites
+
+Contraintes
+- Ne pas hardcoder de secrets dans le code.
+- Utiliser des variables d’environnement sur shinyapps.io :
+  - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_TO
+- Choisir une librairie email fiable :
+  Option recommandée : blastula::smtp_send (simple) ou emayili (robuste).
+  Si blastula pose problème, fallback mailR.
+- Si l’email échoue : ne pas bloquer l’app. Log warning + continuer.
+
+À faire
+1) Implémenter `send_admin_email(payload)` appelé après sauvegarde CSV.
+2) Construire un email HTML minimal, lisible.
+3) Ajouter une section “Debug” optionnelle (désactivée) pour afficher si l’email a été envoyé.
+
+========================
+EXÉCUTION DEMANDÉE
+========================
+1) Inspecte le repo et identifie le point d’entrée (app.R).
+2) Corrige l’encodage (conversion fichiers si besoin) + meta charset + enc2utf8.
+3) Refactor la barre de progression pour qu’elle soit 100% pilotée via custom messages + DOM stable.
+4) Supprime la friction “Prêt ?” et enchaîne directement.
+5) Optimise le layout mobile (viewport, full height, input sticky, boutons).
+6) Ajoute l’envoi email admin via SMTP (env vars) + fallback si erreur.
+7) Vérifie que l’app démarre et que les 3 sujets sont résolus.
+
+SORTIE
+- Applique dans le repo.
+- Liste brièvement :
+  - fichiers modifiés
+  - nouveaux fichiers créés (ex: /www/progress.js)
+  - variables d’environnement à définir pour l’email (noms exacts).
+Commence maintenant.

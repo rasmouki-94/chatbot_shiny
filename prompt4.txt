@@ -1,0 +1,215 @@
+OBJECTIF
+Remplacer uniquement les textes des questions, réponses et messages d’impact par la nouvelle version orientée douleur + quantification que je fournis ci-dessous.
+
+IMPORTANT
+- Ne change PAS la logique du flow.
+- Ne change PAS le scoring.
+- Ne change PAS la structure 12 questions → lead gate → résultats.
+- Ne change PAS l’architecture UI (chat dynamique, typing indicator, message queue).
+- Remplace uniquement les textes affichés (questions, réponses, messages bot conditionnels).
+- Adapter si nécessaire de 12 à 10 questions (car la nouvelle version en contient 10), mais garder le système de scoring cohérent (3 réponses = 0/1/2 points).
+- Si le scoring actuel est basé sur 4 réponses (0–3), adapte-le proprement à 3 réponses (0–1–2) en conservant la logique proportionnelle.
+- Ne casse rien.
+
+FRICTION
+- 3 réponses maximum par question.
+- Libellés courts, naturels.
+- Messages d’impact en bulles séparées après certaines réponses.
+- Ne jamais afficher un pavé long.
+
+LEAD GATE
+- Supprimer toute checkbox de consentement si elle existe.
+- Sous le bouton “Voir mon diagnostic”, ajouter en petit texte italique :
+  “En soumettant ces informations, vous acceptez d’être recontacté au sujet de votre diagnostic.”
+
+TEXTES À UTILISER
+
+INTRO
+
+Bonjour 👋  
+En 2 minutes, on va identifier où vos process vous font perdre du temps… et potentiellement de l’argent.  
+Prêt ?
+
+Réponses :
+- Oui
+
+
+Q1
+Aujourd’hui, pour piloter vos opérations, vous vous appuyez surtout sur :
+
+Réponses :
+- Principalement Excel  
+- Excel + plusieurs outils dispersés  
+- Un ERP bien structuré  
+
+Impact si Excel :
+Dans beaucoup d’industries, Excel devient vite le “cœur caché” de l’organisation…  
+Et quand le fichier grossit, les angles morts aussi.
+
+Impact si Excel + outils :
+Multiplier les outils sans les connecter crée souvent des zones grises.  
+Personne n’a exactement la même vision.
+
+
+Q2
+Combien de versions d’un même fichier circulent en parallèle ?
+
+Réponses :
+- Une seule version claire  
+- 2 à 3 versions  
+- Difficile à savoir  
+
+Impact si 2–3 versions :
+2 versions, c’est déjà 2 réalités différentes.  
+Chaque arbitrage prend plus de temps que prévu.
+
+Impact si difficile :
+Quand on ne sait plus quelle est la “bonne version”,  
+les décisions ralentissent… ou se prennent à l’intuition.
+
+
+Q3
+Combien de temps vos équipes passent chaque semaine à consolider ou vérifier des données ?
+
+Réponses :
+- Moins d’1h  
+- 1 à 3h  
+- Plus de 3h  
+
+Impact si 1–3h :
+3h/semaine ≈ 150h/an.  
+À 60€/h, on parle déjà d’environ 9 000€ par personne.
+
+Impact si >3h :
+Au-delà de 3h/semaine, on dépasse souvent 150 à 300h/an.  
+C’est plusieurs semaines de travail consacrées à vérifier des chiffres.
+
+
+Q4
+Les retards sont généralement :
+
+Réponses :
+- Visibles immédiatement  
+- Identifiés en point hebdomadaire  
+- Découverts trop tard  
+
+Impact si hebdo :
+Une semaine de décalage peut suffire à transformer un petit écart en urgence coûteuse.
+
+Impact si trop tard :
+Découvrir un retard après coup,  
+c’est souvent courir… au lieu de piloter.
+
+
+Q5
+Vos indicateurs clés sont mis à jour :
+
+Réponses :
+- Automatiquement  
+- Semi-manuellement  
+- Entièrement à la main  
+
+Impact si semi :
+Chaque manipulation manuelle est un risque d’erreur…  
+et une dépendance supplémentaire.
+
+Impact si manuel :
+30 minutes par jour de ressaisie ≈ 110h/an.  
+Et ça ne crée aucune valeur directe.
+
+
+Q6
+Si je vous demande le statut exact d’une deadline critique maintenant, il vous faut :
+
+Réponses :
+- Quelques secondes  
+- Quelques minutes  
+- Plus de 30 minutes  
+
+Impact si minutes :
+Quelques minutes multipliées par 5 vérifications par jour  
+représentent des dizaines d’heures par an.
+
+Impact si 30min :
+Quand vérifier une deadline prend 30 minutes,  
+l’information n’est généralement pas centralisée.
+
+
+Q7
+Est-ce que certaines demandes disparaissent temporairement avant d’être traitées ?
+
+Réponses :
+- Jamais  
+- Rarement  
+- Oui, régulièrement  
+
+Impact si rarement :
+Même rare, une demande oubliée peut bloquer toute une chaîne.
+
+Impact si régulièrement :
+Une demande perdue,  
+c’est souvent une urgence imprévue… et du stress en plus.
+
+
+Q8
+Si la personne qui tient le fichier principal s’absente une semaine :
+
+Réponses :
+- Aucun impact  
+- L’activité ralentit  
+- On est clairement en difficulté  
+
+Impact si ralentit :
+Une organisation solide ne dépend pas d’une seule personne.
+
+Impact si difficulté :
+Quand la connaissance est dans la tête de quelqu’un,  
+le risque opérationnel est réel.
+
+
+Q9
+Au cours des 12 derniers mois, avez-vous eu des urgences coûteuses ou pénalités liées à un manque de visibilité ?
+
+Réponses :
+- Non  
+- Une ou deux fois  
+- Oui, plusieurs fois  
+
+Impact si 1–2 :
+Une seule urgence peut coûter plusieurs milliers d’euros.
+
+Impact si plusieurs :
+Quand les urgences deviennent récurrentes,  
+ce n’est plus un accident… c’est un symptôme structurel.
+
+
+Q10
+Aujourd’hui, vos process vous semblent :
+
+Réponses :
+- Robustes  
+- Acceptables mais perfectibles  
+- Fragiles  
+
+Impact si perfectibles :
+C’est souvent à ce stade que les fuites invisibles s’installent.
+
+Impact si fragiles :
+Un process fragile coûte rarement cher tout de suite…  
+mais presque toujours cher à terme.
+
+
+RÉSULTATS (si score élevé)
+
+Impact estimé :
+Même 1h par jour de tâches à faible valeur représente souvent plus de 200h/an,  
+soit facilement 10 000 à 15 000€ immobilisés sans création de valeur.
+
+EXÉCUTION
+1. Localise où sont définis les textes des questions et messages.
+2. Remplace-les par ceux fournis.
+3. Adapte le scoring si nécessaire (3 réponses = 0/1/2).
+4. Supprime toute checkbox consent.
+5. Vérifie que l’app démarre sans erreur.
+
+Applique les modifications directement dans le repo.
