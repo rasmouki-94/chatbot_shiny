@@ -242,8 +242,6 @@ send_admin_email <- function(payload) {
   if (!nzchar(python_bin)) python_bin <- Sys.which("python")
   if (!nzchar(python_bin)) {
     warning("Python indisponible dans l'environnement. Email non envoyé.")
-  if (!requireNamespace("reticulate", quietly = TRUE)) {
-    warning("Package reticulate indisponible. Email non envoyé.")
     return(FALSE)
   }
 
@@ -279,18 +277,6 @@ send_admin_email <- function(payload) {
     sep = "\n"
   )
 
-  ensure_reticulate <- function() {
-    if (requireNamespace("reticulate", quietly = TRUE)) return(TRUE)
-    install_ok <- tryCatch({
-      install.packages("reticulate", repos = "https://cloud.r-project.org")
-      TRUE
-    }, error = function(e) {
-      warning(sprintf("Installation de reticulate échouée: %s", e$message))
-      FALSE
-    })
-    isTRUE(install_ok) && requireNamespace("reticulate", quietly = TRUE)
-  }
-
   env <- c(
     paste0("SMTP_HOST=", host),
     paste0("SMTP_PORT=", as.integer(port)),
@@ -302,28 +288,10 @@ send_admin_email <- function(payload) {
     paste0("MAIL_BODY=", body_text)
   )
 
-  out <- NULL
-
-  if (ensure_reticulate()) {
-    out <- tryCatch({
-      do.call(Sys.setenv, as.list(stats::setNames(sub("^[^=]+=", "", env), sub("=.*$", "", env))))
-      reticulate::py_run_string(py_code, local = FALSE, convert = TRUE)
-      character(0)
-    }, error = function(e) e)
-    if (inherits(out, "error")) {
-      warning(sprintf("Exécution reticulate échouée, fallback Python direct: %s", out$message))
-      out <- tryCatch(
-        system2(python_bin, c("-c", py_code), stdout = TRUE, stderr = TRUE, env = env),
-        error = function(e) e
-      )
-    }
-  } else {
-    warning("Package reticulate indisponible après tentative d'installation. Fallback via exécution Python directe.")
-    out <- tryCatch(
-      system2(python_bin, c("-c", py_code), stdout = TRUE, stderr = TRUE, env = env),
-      error = function(e) e
-    )
-  }
+  out <- tryCatch(
+    system2(python_bin, c("-c", py_code), stdout = TRUE, stderr = TRUE, env = env),
+    error = function(e) e
+  )
 
   if (inherits(out, "error")) {
     warning(sprintf("Envoi email admin échoué (python SMTP): %s", out$message))
@@ -359,34 +327,6 @@ validate_email_setup <- function() {
 
 if (interactive()) {
   message("Config email SMTP: ", validate_email_setup())
-  body_text <- paste(body_lines, collapse = "\n")
-  subject <- sprintf("Nouveau diagnostic - %s", payload$entreprise %||% "Sans entreprise")
-
-  tryCatch({
-    reticulate::py$sender <- from
-    reticulate::py$recipient <- to
-    reticulate::py$smtp_user <- user
-    reticulate::py$smtp_pass <- pass
-    reticulate::py$smtp_host <- host
-    reticulate::py$smtp_port <- as.integer(port)
-    reticulate::py$subject <- subject
-    reticulate::py$body_text <- body_text
-
-    reticulate::py_run_string("from email.message import EmailMessage")
-    reticulate::py_run_string("import smtplib")
-    reticulate::py_run_string("msg = EmailMessage()")
-    reticulate::py_run_string("msg['Subject'] = subject")
-    reticulate::py_run_string("msg['From'] = sender")
-    reticulate::py_run_string("msg['To'] = recipient")
-    reticulate::py_run_string("msg.set_content(body_text)")
-    reticulate::py_run_string("with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:\n    server.login(smtp_user, smtp_pass)\n    server.send_message(msg)")
-
-    message(sprintf("Email admin envoyé via SMTP Gmail à %s", to))
-    TRUE
-  }, error = function(e) {
-    warning(sprintf("Envoi email admin échoué (reticulate/python SMTP): %s", e$message))
-    FALSE
-  })
 }
 
 validate_email_setup <- function() {
