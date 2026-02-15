@@ -225,15 +225,15 @@ score_order_line <- function(score_total) {
 }
 
 send_admin_email <- function(payload) {
-  host <- Sys.getenv("SMTP_HOST", Sys.getenv("GMAIL_SMTP_HOST", "smtp.gmail.com"))
-  port <- Sys.getenv("SMTP_PORT", Sys.getenv("GMAIL_SMTP_PORT", "465"))
-  user <- Sys.getenv("SMTP_USER", Sys.getenv("GMAIL_USER", ""))
-  pass <- Sys.getenv("SMTP_PASS", Sys.getenv("GMAIL_APP_PASSWORD", ""))
+  host <- Sys.getenv("SMTP_HOST", "smtp.gmail.com")
+  port <- Sys.getenv("SMTP_PORT", "465")
+  user <- Sys.getenv("SMTP_USER", "")
+  pass <- Sys.getenv("SMTP_PASS", "")
   from <- Sys.getenv("SMTP_FROM", if (nzchar(user)) user else "")
-  to <- Sys.getenv("SMTP_TO", "")
+  to <- Sys.getenv("SMTP_TO", Sys.getenv("ADMIN_EMAIL", if (nzchar(user)) user else ""))
 
-  if (any(!nzchar(c(host, port, user, pass, from, to)))) {
-    warning("SMTP non configuré (SMTP_HOST/PORT/USER/PASS/FROM/TO ou variables GMAIL_*). Email non envoyé.")
+  if (any(!nzchar(c(user, pass, to)))) {
+    warning("SMTP non configuré : variables requises SMTP_USER, SMTP_PASS et SMTP_TO (ou ADMIN_EMAIL). Email non envoyé.")
     return(FALSE)
   }
   if (!requireNamespace("blastula", quietly = TRUE)) {
