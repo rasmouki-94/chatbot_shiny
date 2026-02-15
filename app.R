@@ -329,6 +329,27 @@ if (interactive()) {
   message("Config email SMTP: ", validate_email_setup())
 }
 
+validate_email_setup <- function() {
+  user <- Sys.getenv("SMTP_USER", "")
+  pass <- Sys.getenv("SMTP_PASS", "")
+  to <- Sys.getenv("SMTP_TO", Sys.getenv("ADMIN_EMAIL", ""))
+  host <- Sys.getenv("SMTP_HOST", "smtp.gmail.com")
+  port <- Sys.getenv("SMTP_PORT", "465")
+
+  checks <- c(
+    sprintf("SMTP_USER: %s", if (nzchar(user)) "OK" else "MANQUANT"),
+    sprintf("SMTP_PASS: %s", if (nzchar(pass)) "OK" else "MANQUANT"),
+    sprintf("SMTP_TO/ADMIN_EMAIL: %s", if (nzchar(to)) "OK" else "MANQUANT"),
+    sprintf("SMTP_HOST: %s", if (nzchar(host)) host else "smtp.gmail.com"),
+    sprintf("SMTP_PORT: %s", if (nzchar(port)) port else "465")
+  )
+  paste(checks, collapse = " | ")
+}
+
+if (interactive()) {
+  message("Config email: ", validate_email_setup())
+}
+
 ui <- fluidPage(
   tags$head(
     tags$meta(charset = "utf-8"),
