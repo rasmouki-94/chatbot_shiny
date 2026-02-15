@@ -44,6 +44,12 @@ body {
   letter-spacing: -0.02em;
 }
 
+.hero-subtitle {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
 .chat-card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -354,4 +360,23 @@ body {
   .choice-wrap {
     grid-template-columns: 1fr;
   }
+}
+
+
+.link-cta {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.app-footer {
+  margin-top: 10px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.app-footer a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
 }
