@@ -237,6 +237,11 @@ send_admin_email <- function(payload) {
     warning("Email non configuré : variables requises SMTP_USER, SMTP_PASS et SMTP_TO (ou ADMIN_EMAIL).")
     return(FALSE)
   }
+
+  python_bin <- Sys.which("python3")
+  if (!nzchar(python_bin)) python_bin <- Sys.which("python")
+  if (!nzchar(python_bin)) {
+    warning("Python indisponible dans l'environnement. Email non envoyé.")
   if (!requireNamespace("reticulate", quietly = TRUE)) {
     warning("Package reticulate indisponible. Email non envoyé.")
     return(FALSE)
@@ -257,6 +262,103 @@ send_admin_email <- function(payload) {
     if (length(detail_lines)) paste0("- ", detail_lines) else "- Aucun détail"
   )
 
+  subject <- sprintf("Nouveau diagnostic - %s", payload$entreprise %||% "Sans entreprise")
+  body_text <- paste(body_lines, collapse = "\n")
+
+  py_code <- paste(
+    "import os, smtplib",
+    "from email.message import EmailMessage",
+    "msg = EmailMessage()",
+    "msg['Subject'] = os.environ['MAIL_SUBJECT']",
+    "msg['From'] = os.environ['MAIL_FROM']",
+    "msg['To'] = os.environ['MAIL_TO']",
+    "msg.set_content(os.environ['MAIL_BODY'])",
+    "with smtplib.SMTP_SSL(os.environ['SMTP_HOST'], int(os.environ['SMTP_PORT'])) as server:",
+    "    server.login(os.environ['SMTP_USER'], os.environ['SMTP_PASS'])",
+    "    server.send_message(msg)",
+    sep = "\n"
+  )
+
+  ensure_reticulate <- function() {
+    if (requireNamespace("reticulate", quietly = TRUE)) return(TRUE)
+    install_ok <- tryCatch({
+      install.packages("reticulate", repos = "https://cloud.r-project.org")
+      TRUE
+    }, error = function(e) {
+      warning(sprintf("Installation de reticulate échouée: %s", e$message))
+      FALSE
+    })
+    isTRUE(install_ok) && requireNamespace("reticulate", quietly = TRUE)
+  }
+
+  env <- c(
+    paste0("SMTP_HOST=", host),
+    paste0("SMTP_PORT=", as.integer(port)),
+    paste0("SMTP_USER=", user),
+    paste0("SMTP_PASS=", pass),
+    paste0("MAIL_FROM=", from),
+    paste0("MAIL_TO=", to),
+    paste0("MAIL_SUBJECT=", subject),
+    paste0("MAIL_BODY=", body_text)
+  )
+
+  out <- NULL
+
+  if (ensure_reticulate()) {
+    out <- tryCatch({
+      do.call(Sys.setenv, as.list(stats::setNames(sub("^[^=]+=", "", env), sub("=.*$", "", env))))
+      reticulate::py_run_string(py_code, local = FALSE, convert = TRUE)
+      character(0)
+    }, error = function(e) e)
+    if (inherits(out, "error")) {
+      warning(sprintf("Exécution reticulate échouée, fallback Python direct: %s", out$message))
+      out <- tryCatch(
+        system2(python_bin, c("-c", py_code), stdout = TRUE, stderr = TRUE, env = env),
+        error = function(e) e
+      )
+    }
+  } else {
+    warning("Package reticulate indisponible après tentative d'installation. Fallback via exécution Python directe.")
+    out <- tryCatch(
+      system2(python_bin, c("-c", py_code), stdout = TRUE, stderr = TRUE, env = env),
+      error = function(e) e
+    )
+  }
+
+  if (inherits(out, "error")) {
+    warning(sprintf("Envoi email admin échoué (python SMTP): %s", out$message))
+    return(FALSE)
+  }
+
+  status <- attr(out, "status")
+  if (!is.null(status) && status != 0) {
+    warning(sprintf("Envoi email admin échoué (python SMTP), code=%s, détail=%s", status, paste(out, collapse = " | ")))
+    return(FALSE)
+  }
+
+  message(sprintf("Email admin envoyé via SMTP Gmail à %s", to))
+  TRUE
+}
+
+validate_email_setup <- function() {
+  user <- Sys.getenv("SMTP_USER", "")
+  pass <- Sys.getenv("SMTP_PASS", "")
+  to <- Sys.getenv("SMTP_TO", Sys.getenv("ADMIN_EMAIL", ""))
+  host <- Sys.getenv("SMTP_HOST", "smtp.gmail.com")
+  port <- Sys.getenv("SMTP_PORT", "465")
+
+  checks <- c(
+    sprintf("SMTP_USER: %s", if (nzchar(user)) "OK" else "MANQUANT"),
+    sprintf("SMTP_PASS: %s", if (nzchar(pass)) "OK" else "MANQUANT"),
+    sprintf("SMTP_TO/ADMIN_EMAIL: %s", if (nzchar(to)) "OK" else "MANQUANT"),
+    sprintf("SMTP_HOST: %s", if (nzchar(host)) host else "smtp.gmail.com"),
+    sprintf("SMTP_PORT: %s", if (nzchar(port)) port else "465")
+  )
+  paste(checks, collapse = " | ")
+}
+
+if (interactive()) {
+  message("Config email SMTP: ", validate_email_setup())
   body_text <- paste(body_lines, collapse = "\n")
   subject <- sprintf("Nouveau diagnostic - %s", payload$entreprise %||% "Sans entreprise")
 
