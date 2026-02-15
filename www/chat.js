@@ -67,11 +67,11 @@
       + "</div>"
       + "<p><strong>Top 3 fuites potentielles</strong></p>"
       + "<ol class='result-list'>" + items + "</ol>"
-      + "<p><strong>Impact estime</strong></p>"
+      + "<p><strong>Impact estimé</strong></p>"
       + "<p>" + escapeHtml(payload.impact || "") + "</p>"
       + "<p><strong>Ordre de grandeur</strong><br>" + escapeHtml(payload.order_line || "") + "</p>"
-      + "<p>Si vous le souhaitez, je peux analyser plus precisement votre situation lors d'un echange rapide.</p>"
-      + "<button class='chat-cta' data-open-slot='1'>Proposer un creneau</button>"
+      + "<p>Si vous le souhaitez, je peux analyser plus précisément votre situation lors d'un échange rapide.</p>"
+      + "<a class='chat-cta link-cta' href='https://www.linkedin.com/in/arsmouk-data-analyst/' target='_blank' rel='noopener noreferrer'>Voir mon profil LinkedIn</a>"
       + "</div>";
 
     addBubble("bot", html, true);
@@ -145,7 +145,7 @@
       html = ""
         + "<div class='text-wrap'>"
         + "<div class='input-caption'>" + escapeHtml(t.prompt || "") + "</div>"
-        + "<input id='chat_text_value' class='chat-input-field' type='text' autocomplete='off' placeholder='" + escapeHtml(t.placeholder || "Votre reponse") + "' />"
+        + "<input id='chat_text_value' class='chat-input-field' type='text' autocomplete='off' placeholder='" + escapeHtml(t.placeholder || "Votre réponse") + "' />"
         + "<button id='chat_submit_text' class='chat-submit'>Envoyer</button>"
         + "<div id='chat_input_error' class='input-error'></div>"
         + "</div>";
@@ -157,7 +157,7 @@
         + "<div id='chat_input_error' class='input-error'></div>"
         + "</div>";
     } else if (state.inputMode === "end") {
-      html = "<div class='end-wrap'><div class='input-caption'>Conversation terminee.</div></div>";
+      html = "<div class='end-wrap'><div class='input-caption'>Conversation terminée.</div></div>";
     }
 
     root.innerHTML = html;
@@ -261,10 +261,6 @@
         return;
       }
 
-      var slot = e.target.closest("[data-open-slot='1']");
-      if (slot) {
-        Shiny.setInputValue("open_slot", Date.now(), { priority: "event" });
-      }
     });
   }
 
