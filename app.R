@@ -225,19 +225,20 @@ score_order_line <- function(score_total) {
 }
 
 send_admin_email <- function(payload) {
-  host <- Sys.getenv("SMTP_HOST", "smtp.gmail.com")
-  port <- Sys.getenv("SMTP_PORT", "465")
   user <- Sys.getenv("SMTP_USER", "")
   pass <- Sys.getenv("SMTP_PASS", "")
   from <- Sys.getenv("SMTP_FROM", if (nzchar(user)) user else "")
   to <- Sys.getenv("SMTP_TO", Sys.getenv("ADMIN_EMAIL", if (nzchar(user)) user else ""))
+  host <- Sys.getenv("SMTP_HOST", "smtp.gmail.com")
+  port <- suppressWarnings(as.integer(Sys.getenv("SMTP_PORT", "465")))
+  if (is.na(port)) port <- 465L
 
-  if (any(!nzchar(c(user, pass, to)))) {
-    warning("SMTP non configuré : variables requises SMTP_USER, SMTP_PASS et SMTP_TO (ou ADMIN_EMAIL). Email non envoyé.")
+  if (any(!nzchar(c(user, pass, from, to)))) {
+    warning("Email non configuré : variables requises SMTP_USER, SMTP_PASS et SMTP_TO (ou ADMIN_EMAIL).")
     return(FALSE)
   }
-  if (!requireNamespace("blastula", quietly = TRUE)) {
-    warning("Package blastula indisponible. Email non envoyé.")
+  if (!requireNamespace("reticulate", quietly = TRUE)) {
+    warning("Package reticulate indisponible. Email non envoyé.")
     return(FALSE)
   }
 
@@ -256,29 +257,55 @@ send_admin_email <- function(payload) {
     if (length(detail_lines)) paste0("- ", detail_lines) else "- Aucun détail"
   )
 
-  email <- blastula::compose_email(body = blastula::md(paste(body_lines, collapse = "  \n")))
-  port_int <- suppressWarnings(as.integer(port))
-  if (is.na(port_int)) port_int <- 465L
+  body_text <- paste(body_lines, collapse = "\n")
+  subject <- sprintf("Nouveau diagnostic - %s", payload$entreprise %||% "Sans entreprise")
 
   tryCatch({
-    blastula::smtp_send(
-      email = email,
-      from = from,
-      to = to,
-      subject = sprintf("Nouveau diagnostic - %s", payload$entreprise %||% "Sans entreprise"),
-      credentials = blastula::creds(
-        host = host,
-        port = port_int,
-        user = user,
-        pass = pass,
-        use_ssl = identical(port_int, 465L)
-      )
-    )
+    reticulate::py$sender <- from
+    reticulate::py$recipient <- to
+    reticulate::py$smtp_user <- user
+    reticulate::py$smtp_pass <- pass
+    reticulate::py$smtp_host <- host
+    reticulate::py$smtp_port <- as.integer(port)
+    reticulate::py$subject <- subject
+    reticulate::py$body_text <- body_text
+
+    reticulate::py_run_string("from email.message import EmailMessage")
+    reticulate::py_run_string("import smtplib")
+    reticulate::py_run_string("msg = EmailMessage()")
+    reticulate::py_run_string("msg['Subject'] = subject")
+    reticulate::py_run_string("msg['From'] = sender")
+    reticulate::py_run_string("msg['To'] = recipient")
+    reticulate::py_run_string("msg.set_content(body_text)")
+    reticulate::py_run_string("with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:\n    server.login(smtp_user, smtp_pass)\n    server.send_message(msg)")
+
+    message(sprintf("Email admin envoyé via SMTP Gmail à %s", to))
     TRUE
   }, error = function(e) {
-    warning(sprintf("Envoi email admin échoué: %s", e$message))
+    warning(sprintf("Envoi email admin échoué (reticulate/python SMTP): %s", e$message))
     FALSE
   })
+}
+
+validate_email_setup <- function() {
+  user <- Sys.getenv("SMTP_USER", "")
+  pass <- Sys.getenv("SMTP_PASS", "")
+  to <- Sys.getenv("SMTP_TO", Sys.getenv("ADMIN_EMAIL", ""))
+  host <- Sys.getenv("SMTP_HOST", "smtp.gmail.com")
+  port <- Sys.getenv("SMTP_PORT", "465")
+
+  checks <- c(
+    sprintf("SMTP_USER: %s", if (nzchar(user)) "OK" else "MANQUANT"),
+    sprintf("SMTP_PASS: %s", if (nzchar(pass)) "OK" else "MANQUANT"),
+    sprintf("SMTP_TO/ADMIN_EMAIL: %s", if (nzchar(to)) "OK" else "MANQUANT"),
+    sprintf("SMTP_HOST: %s", if (nzchar(host)) host else "smtp.gmail.com"),
+    sprintf("SMTP_PORT: %s", if (nzchar(port)) port else "465")
+  )
+  paste(checks, collapse = " | ")
+}
+
+if (interactive()) {
+  message("Config email: ", validate_email_setup())
 }
 
 ui <- fluidPage(
