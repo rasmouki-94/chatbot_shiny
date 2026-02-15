@@ -238,24 +238,26 @@ send_admin_email <- function(payload) {
     return(FALSE)
   }
 
-  python_bin <- Sys.which("python3")
-  if (!nzchar(python_bin)) python_bin <- Sys.which("python")
-  if (!nzchar(python_bin)) {
-    warning("Python indisponible dans l'environnement. Email non envoyé.")
+  if (!requireNamespace("reticulate", quietly = TRUE)) {
+    warning("Package reticulate indisponible. Email non envoyé.")
+    return(FALSE)
+  }
+
+  script_path <- file.path(getwd(), "main", "emailer.py")
+  if (!file.exists(script_path)) {
+    warning(sprintf("Script emailer introuvable: %s", script_path))
     return(FALSE)
   }
 
   detail_lines <- payload$answer_details %||% character(0)
   body_lines <- c(
     "Nouveau diagnostic chatbot",
-    "",
     sprintf("Timestamp UTC: %s", payload$timestamp_utc),
     sprintf("Nom: %s %s", payload$prenom, payload$nom),
     sprintf("Entreprise: %s", payload$entreprise),
     sprintf("Email: %s", payload$email),
     sprintf("Score: %s (%s)", payload$score_total, payload$band),
     sprintf("Top 3 fuites: %s", paste(payload$top3, collapse = " | ")),
-    "",
     "Détail des réponses:",
     if (length(detail_lines)) paste0("- ", detail_lines) else "- Aucun détail"
   )
@@ -263,48 +265,26 @@ send_admin_email <- function(payload) {
   subject <- sprintf("Nouveau diagnostic - %s", payload$entreprise %||% "Sans entreprise")
   body_text <- paste(body_lines, collapse = "\n")
 
-  py_code <- paste(
-    "import os, smtplib",
-    "from email.message import EmailMessage",
-    "msg = EmailMessage()",
-    "msg['Subject'] = os.environ['MAIL_SUBJECT']",
-    "msg['From'] = os.environ['MAIL_FROM']",
-    "msg['To'] = os.environ['MAIL_TO']",
-    "msg.set_content(os.environ['MAIL_BODY'])",
-    "with smtplib.SMTP_SSL(os.environ['SMTP_HOST'], int(os.environ['SMTP_PORT'])) as server:",
-    "    server.login(os.environ['SMTP_USER'], os.environ['SMTP_PASS'])",
-    "    server.send_message(msg)",
-    sep = "\n"
-  )
+  ok <- tryCatch({
+    reticulate::source_python(script_path)
+    reticulate::py$send_email_smtp(
+      smtp_host = host,
+      smtp_port = as.integer(port),
+      smtp_user = user,
+      smtp_pass = pass,
+      mail_from = from,
+      mail_to = to,
+      subject = subject,
+      body_text = body_text
+    )
+  }, error = function(e) {
+    warning(sprintf("Envoi email admin échoué (reticulate/emailer.py): %s", e$message))
+    FALSE
+  })
 
-  env <- c(
-    paste0("SMTP_HOST=", host),
-    paste0("SMTP_PORT=", as.integer(port)),
-    paste0("SMTP_USER=", user),
-    paste0("SMTP_PASS=", pass),
-    paste0("MAIL_FROM=", from),
-    paste0("MAIL_TO=", to),
-    paste0("MAIL_SUBJECT=", subject),
-    paste0("MAIL_BODY=", body_text)
-  )
+  if (!isTRUE(ok)) return(FALSE)
 
-  out <- tryCatch(
-    system2(python_bin, c("-c", py_code), stdout = TRUE, stderr = TRUE, env = env),
-    error = function(e) e
-  )
-
-  if (inherits(out, "error")) {
-    warning(sprintf("Envoi email admin échoué (python SMTP): %s", out$message))
-    return(FALSE)
-  }
-
-  status <- attr(out, "status")
-  if (!is.null(status) && status != 0) {
-    warning(sprintf("Envoi email admin échoué (python SMTP), code=%s, détail=%s", status, paste(out, collapse = " | ")))
-    return(FALSE)
-  }
-
-  message(sprintf("Email admin envoyé via SMTP Gmail à %s", to))
+  message(sprintf("Email admin envoyé via emailer.py à %s", to))
   TRUE
 }
 
@@ -314,40 +294,21 @@ validate_email_setup <- function() {
   to <- Sys.getenv("SMTP_TO", Sys.getenv("ADMIN_EMAIL", ""))
   host <- Sys.getenv("SMTP_HOST", "smtp.gmail.com")
   port <- Sys.getenv("SMTP_PORT", "465")
+  script_path <- file.path(getwd(), "main", "emailer.py")
 
   checks <- c(
     sprintf("SMTP_USER: %s", if (nzchar(user)) "OK" else "MANQUANT"),
     sprintf("SMTP_PASS: %s", if (nzchar(pass)) "OK" else "MANQUANT"),
     sprintf("SMTP_TO/ADMIN_EMAIL: %s", if (nzchar(to)) "OK" else "MANQUANT"),
     sprintf("SMTP_HOST: %s", if (nzchar(host)) host else "smtp.gmail.com"),
-    sprintf("SMTP_PORT: %s", if (nzchar(port)) port else "465")
+    sprintf("SMTP_PORT: %s", if (nzchar(port)) port else "465"),
+    sprintf("main/emailer.py: %s", if (file.exists(script_path)) "OK" else "MANQUANT")
   )
   paste(checks, collapse = " | ")
 }
 
 if (interactive()) {
   message("Config email SMTP: ", validate_email_setup())
-}
-
-validate_email_setup <- function() {
-  user <- Sys.getenv("SMTP_USER", "")
-  pass <- Sys.getenv("SMTP_PASS", "")
-  to <- Sys.getenv("SMTP_TO", Sys.getenv("ADMIN_EMAIL", ""))
-  host <- Sys.getenv("SMTP_HOST", "smtp.gmail.com")
-  port <- Sys.getenv("SMTP_PORT", "465")
-
-  checks <- c(
-    sprintf("SMTP_USER: %s", if (nzchar(user)) "OK" else "MANQUANT"),
-    sprintf("SMTP_PASS: %s", if (nzchar(pass)) "OK" else "MANQUANT"),
-    sprintf("SMTP_TO/ADMIN_EMAIL: %s", if (nzchar(to)) "OK" else "MANQUANT"),
-    sprintf("SMTP_HOST: %s", if (nzchar(host)) host else "smtp.gmail.com"),
-    sprintf("SMTP_PORT: %s", if (nzchar(port)) port else "465")
-  )
-  paste(checks, collapse = " | ")
-}
-
-if (interactive()) {
-  message("Config email: ", validate_email_setup())
 }
 
 ui <- fluidPage(
