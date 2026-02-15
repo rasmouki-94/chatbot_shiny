@@ -242,6 +242,8 @@ send_admin_email <- function(payload) {
   if (!nzchar(python_bin)) python_bin <- Sys.which("python")
   if (!nzchar(python_bin)) {
     warning("Python indisponible dans l'environnement. Email non envoyé.")
+  if (!requireNamespace("reticulate", quietly = TRUE)) {
+    warning("Package reticulate indisponible. Email non envoyé.")
     return(FALSE)
   }
 
@@ -357,6 +359,55 @@ validate_email_setup <- function() {
 
 if (interactive()) {
   message("Config email SMTP: ", validate_email_setup())
+  body_text <- paste(body_lines, collapse = "\n")
+  subject <- sprintf("Nouveau diagnostic - %s", payload$entreprise %||% "Sans entreprise")
+
+  tryCatch({
+    reticulate::py$sender <- from
+    reticulate::py$recipient <- to
+    reticulate::py$smtp_user <- user
+    reticulate::py$smtp_pass <- pass
+    reticulate::py$smtp_host <- host
+    reticulate::py$smtp_port <- as.integer(port)
+    reticulate::py$subject <- subject
+    reticulate::py$body_text <- body_text
+
+    reticulate::py_run_string("from email.message import EmailMessage")
+    reticulate::py_run_string("import smtplib")
+    reticulate::py_run_string("msg = EmailMessage()")
+    reticulate::py_run_string("msg['Subject'] = subject")
+    reticulate::py_run_string("msg['From'] = sender")
+    reticulate::py_run_string("msg['To'] = recipient")
+    reticulate::py_run_string("msg.set_content(body_text)")
+    reticulate::py_run_string("with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:\n    server.login(smtp_user, smtp_pass)\n    server.send_message(msg)")
+
+    message(sprintf("Email admin envoyé via SMTP Gmail à %s", to))
+    TRUE
+  }, error = function(e) {
+    warning(sprintf("Envoi email admin échoué (reticulate/python SMTP): %s", e$message))
+    FALSE
+  })
+}
+
+validate_email_setup <- function() {
+  user <- Sys.getenv("SMTP_USER", "")
+  pass <- Sys.getenv("SMTP_PASS", "")
+  to <- Sys.getenv("SMTP_TO", Sys.getenv("ADMIN_EMAIL", ""))
+  host <- Sys.getenv("SMTP_HOST", "smtp.gmail.com")
+  port <- Sys.getenv("SMTP_PORT", "465")
+
+  checks <- c(
+    sprintf("SMTP_USER: %s", if (nzchar(user)) "OK" else "MANQUANT"),
+    sprintf("SMTP_PASS: %s", if (nzchar(pass)) "OK" else "MANQUANT"),
+    sprintf("SMTP_TO/ADMIN_EMAIL: %s", if (nzchar(to)) "OK" else "MANQUANT"),
+    sprintf("SMTP_HOST: %s", if (nzchar(host)) host else "smtp.gmail.com"),
+    sprintf("SMTP_PORT: %s", if (nzchar(port)) port else "465")
+  )
+  paste(checks, collapse = " | ")
+}
+
+if (interactive()) {
+  message("Config email: ", validate_email_setup())
 }
 
 ui <- fluidPage(
